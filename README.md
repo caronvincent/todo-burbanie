@@ -1,3 +1,11 @@
+# todo-web-app
+
+This project is the technical challenge for CERN position BE-CSS-CSA-2024-216-GRAP.
+
+Original author: Bartek Urbaniec
+
+# Original README contents
+
 This is a skeleton of Spring Boot application which should be used as a start point to create a working one.
 The goal of this task is to create simple REST API  which allows users to manage TODOs. 
 The API should allow to create/delete/update TODOs and categories as well as search for user, name, description, deadline and category in any combination. *For example find all todos for an user X where deadline is today and name contains test.* 
