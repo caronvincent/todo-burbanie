@@ -12,6 +12,8 @@ CREATE TABLE tasks (
     task_name           VARCHAR2(100) NOT NULL,
     task_description    VARCHAR2(500),
     deadline            TIMESTAMP NOT NULL,
-    category_id         NUMBER NOT NULL
+    category_id         NUMBER NOT NULL,
+    author              VARCHAR_IGNORECASE(50) NOT NULL
 );
-ALTER TABLE tasks ADD CONSTRAINT task_categories_fk FOREIGN KEY (category_id) REFERENCES task_categories (category_id)
+ALTER TABLE tasks ADD CONSTRAINT task_categories_fk FOREIGN KEY (category_id) REFERENCES task_categories (category_id);
+ALTER TABLE tasks ADD CONSTRAINT users_fk FOREIGN KEY (author) REFERENCES users (username);
