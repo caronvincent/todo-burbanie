@@ -42,4 +42,14 @@ public class CategoryController {
             throw new ResponseStatusException(NOT_FOUND, "No category with ID " + id, e);
         }
     }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PutMapping("{id}")
+    public Category updateCategory(@PathVariable Long id, @Valid @RequestBody NewCategoryDto category) {
+        try {
+            return categoryService.updateCategory(id, category);
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(NOT_FOUND, "No category with ID " + id, e);
+        }
+    }
 }

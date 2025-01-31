@@ -18,9 +18,19 @@ Creates a category. Needs `ADMIN` role.
 
 Expects JSON with the following structure: `{"name" : "Name of category", "description" : "Category description"}`
 
+All fields are required.
+
 ## GET /categories/{id}
 
 Reads a category with ID `{id}`.
+
+## PUT /categories/{id}
+
+Updates a category. Needs `ADMIN` role.
+
+Expects JSON with the following structure: `{"name" : "New name of category", "description" : "New category description"}`
+
+All fields are required.
 
 # Original README contents
 

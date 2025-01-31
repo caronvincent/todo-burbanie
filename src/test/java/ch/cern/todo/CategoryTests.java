@@ -13,8 +13,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -139,9 +138,91 @@ public class CategoryTests extends TodoApplicationTests {
         }
     }
 
-    @Test
-    void given_ExistingCategory_when_PutCategoriesId_then_CategoryIsUpdated() {
-        throw new UnsupportedOperationException();
+    @Nested
+    class UpdateTests {
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void given_ExistingCategory_when_PutCategory_then_CategoryIsUpdated() throws Exception {
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("first title", "first description")));
+
+            String name = "new title";
+            String description = "new description";
+
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", name);
+            inputOutput.put("description", description);
+
+            mockMvc
+                .perform(put("/categories/" + newCategory.getId())
+                        .content(objectMapper.writeValueAsString(inputOutput))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(inputOutput)));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void given_MissingCategory_when_PutCategory_then_Status404() throws Exception {
+            Map<String, Object> body = new HashMap<>();
+            body.put("name", "doesn't matter");
+            body.put("description", "doesn't matter");
+
+            mockMvc
+                .perform(put("/categories/999999999")
+                        .content(objectMapper.writeValueAsString(body))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void given_UserNotAdmin_when_PutCategory_then_Status403() throws Exception {
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("doesn't matter", "doesn't matter")));
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("name", "doesn't matter");
+            body.put("description", "doesn't matter");
+
+            mockMvc
+                .perform(put("/categories/" + newCategory.getId())
+                    .content(objectMapper.writeValueAsString(body))
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void given_AnonymousClient_when_PutCategory_then_Status401() throws Exception {
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("doesn't matter", "doesn't matter")));
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("name", "doesn't matter");
+            body.put("description", "doesn't matter");
+
+            mockMvc
+                .perform(post("/categories/" + newCategory.getId())
+                    .content(objectMapper.writeValueAsString(body))
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void given_MissingData_when_PutCategory_then_Status400() throws Exception {
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("doesn't matter", "doesn't matter")));
+
+            Map<String, Object> input = new HashMap<>();
+            input.put("name", "missing description");
+
+            mockMvc
+                .perform(put("/categories/" + newCategory.getId())
+                    .content(objectMapper.writeValueAsString(input))
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isBadRequest());
+        }
     }
 
     @Test
