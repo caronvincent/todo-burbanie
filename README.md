@@ -4,6 +4,20 @@ This project is the technical challenge for CERN position BE-CSS-CSA-2024-216-GR
 
 Original author: Bartek Urbaniec
 
+# Security
+
+All routes require authentication and some require authorization. HTTP Basic auth is used.
+
+This program does not include user management, it uses hard-coded users defined in `TodoApplication.java`.
+
+# Endpoints
+
+## POST /categories
+
+Creates a category. Needs `ADMIN` role.
+
+Expects JSON with the following structure: `{"name" : "Name of category", "description" : "Category description"}`
+
 # Original README contents
 
 This is a skeleton of Spring Boot application which should be used as a start point to create a working one.

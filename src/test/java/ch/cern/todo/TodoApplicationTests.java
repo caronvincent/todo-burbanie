@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
@@ -24,6 +26,7 @@ class TodoApplicationTests {
 	// Category tests
 
 	@Test
+	@WithMockUser(roles = "ADMIN")
 	void given_CategoryData_when_PostCategories_then_CategoryIsCreated() throws Exception {
 		Map<String, Object> input = new HashMap<>();
 		input.put("name", "test title");
@@ -37,7 +40,10 @@ class TodoApplicationTests {
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		this.mockMvc
-			.perform(post("/categories").content(objectMapper.writeValueAsString(input)))
+			.perform(post("/categories")
+					.content(objectMapper.writeValueAsString(input))
+					.contentType(MediaType.APPLICATION_JSON)
+			)
 			.andDo(print())
 			.andExpect(status().isCreated())
 			.andExpect(content().json(objectMapper.writeValueAsString(expected)));

@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,8 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import javax.sql.DataSource;
 
-import static org.springframework.boot.autoconfigure.security.servlet.PathRequest.toH2Console;
 import static org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType.H2;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @SpringBootApplication
 public class TodoApplication {
@@ -27,15 +28,11 @@ public class TodoApplication {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		// Remove security on H2 console links
-		// Source: https://github.com/spring-projects/spring-security/issues/12546#issuecomment-1700917846
 		return http
-				.csrf(csrf -> csrf
-					.ignoringRequestMatchers(toH2Console())
-					.disable()
-				)
-				.authorizeHttpRequests(auth -> auth.requestMatchers(toH2Console()).permitAll())
+				.csrf(AbstractHttpConfigurer::disable)
+				.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated())
 				.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+				.httpBasic(withDefaults())
 				.build();
 	}
 
@@ -49,6 +46,7 @@ public class TodoApplication {
 
 	@Bean
 	UserDetailsManager users(DataSource dataSource) {
+		// Challenge requirements do not include user management so we hardcode a few users
 		UserDetails user = User.builder()
 				.username("user")
 				.password("{noop}u1pass")
