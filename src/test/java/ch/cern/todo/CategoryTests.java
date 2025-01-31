@@ -106,15 +106,18 @@ public class CategoryTests extends TodoApplicationTests {
     class ReadTests {
         @Test
         @WithMockUser(roles = "USER")
-        void given_ExistingCategory_when_GetCategoriesId_then_CategoryIsReturned() throws Exception {
-            categoryRepository.save(new Category(new NewCategoryDto("test title", "test description")));
+        void given_ExistingCategory_when_GetCategory_then_CategoryIsReturned() throws Exception {
+            String name = "test title";
+            String description = "test description";
+
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto(name, description)));
 
             Map<String, Object> expected = new HashMap<>();
-            expected.put("name", "test title");
-            expected.put("description", "test description");
+            expected.put("name", name);
+            expected.put("description", description);
 
             mockMvc
-                .perform(get("/categories/1"))
+                .perform(get("/categories/" + newCategory.getId()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectMapper.writeValueAsString(expected)));
@@ -122,11 +125,17 @@ public class CategoryTests extends TodoApplicationTests {
 
         @Test
         @WithMockUser(roles = "USER")
-        void given_MissingCategory_when_GetCategoriesId_then_Status404() throws Exception {
+        void given_MissingCategory_when_GetCategory_then_Status404() throws Exception {
             mockMvc
                 .perform(get("/categories/999999999"))
-                .andDo(print())
                 .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void given_AnonymousClient_when_GetCategory_then_Status401() throws Exception {
+            mockMvc
+                .perform(get("/categories/1"))
+                .andExpect(status().isUnauthorized());
         }
     }
 
