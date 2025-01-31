@@ -2,15 +2,25 @@ package ch.cern.todo.model;
 
 import jakarta.persistence.*;
 
-@Entity
+@Entity(name = "task_categories")
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "category_id")
     private Long id;
-    @Column(name = "category_name", length = 100)
+
+    @Column(
+        name = "category_name",
+        length = 100,
+        nullable = false
+    )
     private String name;
-    @Column(name = "category_description", length = 500)
+
+    @Column(
+        name = "category_description",
+        length = 500,
+        nullable = false
+    )
     private String description;
 
     public Category() {}
