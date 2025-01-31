@@ -18,6 +18,10 @@ Creates a category. Needs `ADMIN` role.
 
 Expects JSON with the following structure: `{"name" : "Name of category", "description" : "Category description"}`
 
+## GET /categories/{id}
+
+Reads a category with ID `{id}`.
+
 # Original README contents
 
 This is a skeleton of Spring Boot application which should be used as a start point to create a working one.

@@ -1,5 +1,8 @@
 package ch.cern.todo;
 
+import ch.cern.todo.model.Category;
+import ch.cern.todo.model.NewCategoryDto;
+import ch.cern.todo.repository.CategoryRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -22,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class TodoApplicationTests {
 	@Autowired
 	private MockMvc mockMvc;
+	@Autowired
+	private CategoryRepository categoryRepository;
 
 	// Category tests
 
@@ -50,8 +56,22 @@ class TodoApplicationTests {
 	}
 
 	@Test
-	void given_ExistingCategory_when_GetCategoriesId_then_CategoryIsReturned() {
-		throw new UnsupportedOperationException();
+	@WithMockUser(roles = "USER")
+	void given_ExistingCategory_when_GetCategoriesId_then_CategoryIsReturned() throws Exception {
+		categoryRepository.save(new Category(new NewCategoryDto("test title", "test description")));
+
+		Map<String, Object> expected = new HashMap<>();
+		expected.put("id", 1);
+		expected.put("name", "test title");
+		expected.put("description", "test description");
+
+		ObjectMapper objectMapper = new ObjectMapper();
+
+		this.mockMvc
+			.perform(get("/categories/1"))
+			.andDo(print())
+			.andExpect(status().isOk())
+			.andExpect(content().json(objectMapper.writeValueAsString(expected)));
 	}
 
 	@Test
