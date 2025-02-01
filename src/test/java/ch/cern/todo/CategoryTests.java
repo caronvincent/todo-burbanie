@@ -4,6 +4,7 @@ import ch.cern.todo.model.Category;
 import ch.cern.todo.model.NewCategoryDto;
 import ch.cern.todo.repository.CategoryRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -23,14 +25,22 @@ public class CategoryTests extends TodoApplicationTests {
     private CategoryRepository categoryRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @AfterEach
+    public void tearDown() {
+        categoryRepository.deleteAll();
+    }
+
     @Nested
     class CreationTests {
         @Test
         @WithMockUser(roles = "ADMIN")
         void given_CategoryData_when_PostCategories_then_Status201() throws Exception {
+            String title = "test title";
+            String description = "test description";
+
             Map<String, Object> inputOutput = new HashMap<>();
-            inputOutput.put("name", "test title");
-            inputOutput.put("description", "test description");
+            inputOutput.put("name", title);
+            inputOutput.put("description", description);
 
             mockMvc
                 .perform(post("/categories")
@@ -40,6 +50,14 @@ public class CategoryTests extends TodoApplicationTests {
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(content().json(objectMapper.writeValueAsString(inputOutput)));
+
+            assertEquals(1, categoryRepository.count());
+            Iterable<Category> categories = categoryRepository.findAll();
+            // Shouldn't loop
+            for (Category category : categories) {
+                assertEquals(title, category.getName());
+                assertEquals(description, category.getDescription());
+            }
         }
 
         @Test
@@ -154,11 +172,16 @@ public class CategoryTests extends TodoApplicationTests {
 
             mockMvc
                 .perform(put("/categories/" + newCategory.getId())
-                        .content(objectMapper.writeValueAsString(inputOutput))
-                        .contentType(MediaType.APPLICATION_JSON))
+                    .content(objectMapper.writeValueAsString(inputOutput))
+                    .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectMapper.writeValueAsString(inputOutput)));
+
+            assertEquals(1, categoryRepository.count());
+            Category updatedCategory = categoryRepository.findById(newCategory.getId()).orElseThrow();
+            assertEquals(name, updatedCategory.getName());
+            assertEquals(description, updatedCategory.getDescription());
         }
 
         @Test
@@ -170,8 +193,8 @@ public class CategoryTests extends TodoApplicationTests {
 
             mockMvc
                 .perform(put("/categories/999999999")
-                        .content(objectMapper.writeValueAsString(body))
-                        .contentType(MediaType.APPLICATION_JSON))
+                    .content(objectMapper.writeValueAsString(body))
+                    .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
         }
 
@@ -234,6 +257,7 @@ public class CategoryTests extends TodoApplicationTests {
             mockMvc
                 .perform(delete("/categories/" + newCategory.getId()))
                 .andExpect(status().isOk());
+            assertEquals(0, categoryRepository.count());
         }
 
         @Test
