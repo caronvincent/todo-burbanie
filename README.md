@@ -10,9 +10,19 @@ All routes require authentication and some require authorization. HTTP Basic aut
 
 This program does not include user management, it uses hard-coded users defined in `TodoApplication.java`.
 
+Three users are provided:
+- user (password `u1pass`), normal user
+- userTwo (password `u2pass`), second normal user
+- admin (password `admin`), admin user
+
 # Endpoints
 
-## POST /categories
+## Categories
+
+This section describes endpoints related to categories. Categories are shared between all users.
+Categories can be read by all users, but only administrators can create/update/delete categories.
+
+### POST /categories
 
 Creates a category. Needs `ADMIN` role.
 
@@ -20,11 +30,11 @@ Expects JSON with the following structure: `{"name" : "Name of category", "descr
 
 All fields are required.
 
-## GET /categories/{id}
+### GET /categories/{id}
 
 Reads category `{id}`.
 
-## PUT /categories/{id}
+### PUT /categories/{id}
 
 Updates a category. Needs `ADMIN` role.
 
@@ -32,11 +42,23 @@ Expects JSON with the following structure: `{"name" : "New name of category", "d
 
 All fields are required.
 
-## DELETE /categories/{id}
+### DELETE /categories/{id}
 
 Deletes category `{id}`. Needs `ADMIN` role.
 
 If category `{id}` does not exist, nothing happens and status 200 is returned.
+
+## Tasks
+
+This section describes endpoints related to tasks. Tasks are user-private: users can CRUD their own tasks but not those of other users. Administrators can CRUD any task.
+
+### POST /tasks
+
+Creates a task.
+
+Expects JSON with the following structure: `{"name" : "Name of task", "description" : "Task description", "deadline" : "1970-01-01T00:00", "categoryId": 42}`
+
+Description is optional. Deadline must be of format `YYYY-MM-DDTMM:SS`. Category must exist.
 
 # Original README contents
 

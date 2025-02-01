@@ -19,7 +19,7 @@ public class Category {
     @Column(
         name = "category_description",
         length = 500,
-        nullable = false
+        nullable = false // TODO should be nullable
     )
     private String description;
 
@@ -28,6 +28,11 @@ public class Category {
     public Category(NewCategoryDto input) {
         this.name = input.name();
         this.description = input.description();
+    }
+
+    public Category(String name, String description) {
+        this.name = name;
+        this.description = description;
     }
 
     public Long getId() {
