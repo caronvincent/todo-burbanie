@@ -52,4 +52,10 @@ public class CategoryController {
             throw new ResponseStatusException(NOT_FOUND, "No category with ID " + id, e);
         }
     }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @DeleteMapping("{id}")
+    public void deleteCategory(@PathVariable Long id) {
+        categoryService.deleteCategory(id);
+    }
 }

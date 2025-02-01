@@ -31,4 +31,8 @@ public class CategoryService {
                 }
         ).orElseThrow();
     }
+
+    public void deleteCategory(Long id) {
+        categoryRepository.deleteById(id);
+    }
 }

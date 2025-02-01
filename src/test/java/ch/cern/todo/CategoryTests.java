@@ -225,13 +225,40 @@ public class CategoryTests extends TodoApplicationTests {
         }
     }
 
-    @Test
-    void given_ExistingCategory_when_DeleteCategoriesId_then_CategoryIsDeleted() {
-        throw new UnsupportedOperationException();
-    }
+    @Nested
+    class DeleteTests {
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void given_ExistingCategory_when_DeleteCategory_then_CategoryIsDeleted() throws Exception {
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("doesn't matter", "doesn't matter")));
+            mockMvc
+                .perform(delete("/categories/" + newCategory.getId()))
+                .andExpect(status().isOk());
+        }
 
-    @Test
-    void given_UserIsNotAdmin_when_AnyCategoryOperation_then_Status403() {
-        throw new UnsupportedOperationException();
+        @Test
+        @WithMockUser(roles = "USER")
+        void given_UserNotAdmin_when_DeleteCategory_then_Status403() throws Exception {
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("doesn't matter", "doesn't matter")));
+            mockMvc
+                .perform(delete("/categories/" + newCategory.getId()))
+                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void given_AnonymousClient_when_DeleteCategory_then_Status401() throws Exception {
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("doesn't matter", "doesn't matter")));
+            mockMvc
+                .perform(delete("/categories/" + newCategory.getId()))
+                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void given_MissingCategory_when_DeleteCategory_then_NothingHappensStatus200() throws Exception {
+            mockMvc
+                .perform(delete("/categories/999999999"))
+                .andExpect(status().isOk());
+        }
     }
 }
