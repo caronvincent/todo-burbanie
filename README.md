@@ -60,6 +60,14 @@ Expects JSON with the following structure: `{"name" : "Name of task", "descripti
 
 Description is optional. Deadline must be of format `YYYY-MM-DDTMM:SS`. Category must exist.
 
+# Testing
+
+All routes have accompanying tests.
+
+# CI
+
+A GitHub Actions workflow has been defined to build and test the codebase on every push.
+
 # Original README contents
 
 This is a skeleton of Spring Boot application which should be used as a start point to create a working one.
