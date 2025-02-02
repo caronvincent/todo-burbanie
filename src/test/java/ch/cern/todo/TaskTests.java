@@ -16,8 +16,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -149,34 +148,35 @@ public class TaskTests extends TodoApplicationTests {
 
     @Nested
     class ReadTests {
-        @Test
-        @WithMockUser(roles = "USER", username = genericUsername)
-        void given_ExistingTask_when_GetTask_then_TaskIsReturned() throws Exception {
-            String name = "test title";
-            String description = "test description";
-            String deadline = "1970-01-01T00:00";
+        private Task preExistingTask;
 
-            Task newTask = taskRepository.save(
+        @BeforeEach
+        void setUp() {
+            preExistingTask = taskRepository.save(
                 new Task(
                     new NewTaskDto(
-                        name,
-                        description,
-                        deadline,
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
                         genericCategory.getId()
                     ),
                     genericCategory,
                     genericUsername
                 )
             );
+        }
 
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTask_when_GetTask_then_TaskIsReturned() throws Exception {
             Map<String, Object> expected = new HashMap<>();
-            expected.put("name", name);
-            expected.put("description", description);
-            expected.put("deadline", deadline);
+            expected.put("name", preExistingTask.getName());
+            expected.put("description", preExistingTask.getDescription());
+            expected.put("deadline", preExistingTask.getDeadline().toString());
             expected.put("categoryId", genericCategory.getId());
 
             mockMvc
-                .perform(get("/tasks/" + newTask.getId()))
+                .perform(get("/tasks/" + preExistingTask.getId()))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectMapper.writeValueAsString(expected)));
         }
@@ -199,21 +199,8 @@ public class TaskTests extends TodoApplicationTests {
         @Test
         @WithMockUser(roles = "USER", username = "DifferentUser")
         void given_ExistingTask1FromUser1_when_GetTask1FromUser2_then_Status403() throws Exception {
-            Task newTask = taskRepository.save(
-                new Task(
-                    new NewTaskDto(
-                        "test title",
-                        "test description",
-                        "1970-01-01T00:00",
-                        genericCategory.getId()
-                    ),
-                    genericCategory,
-                    genericUsername
-                )
-            );
-
             mockMvc
-                .perform(get("/tasks/" + newTask.getId()))
+                .perform(get("/tasks/" + preExistingTask.getId()))
                 .andExpect(status().isForbidden());
         }
 
@@ -241,9 +228,172 @@ public class TaskTests extends TodoApplicationTests {
 
     @Nested
     class UpdateTests {
+        private Task preExistingTask;
+
+        @BeforeEach
+        void setUp() {
+            preExistingTask = taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+        }
+
         @Test
-        void given_ExistingTask_when_PutTasksId_then_TaskIsUpdated() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTask_when_PutTask_then_TaskIsUpdated() throws Exception {
+            String name = "new name";
+            String description = "new description";
+            String deadline = "2000-01-01T00:00";
+            Category secondCategory = categoryRepository.save(new Category("other", "other"));
+
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", name);
+            inputOutput.put("description", description);
+            inputOutput.put("deadline", deadline);
+            inputOutput.put("categoryId", secondCategory.getId());
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(put("/tasks/" + preExistingTask.getId())
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().json(inputOutputAsString));
+
+            assertEquals(1, taskRepository.count());
+            Task updatedTask = taskRepository.findById(preExistingTask.getId()).orElseThrow();
+            assertEquals(name, updatedTask.getName());
+            assertEquals(description, updatedTask.getDescription());
+            assertEquals(deadline, updatedTask.getDeadline().toString());
+            assertEquals(genericUsername, updatedTask.getAuthor());
+            assertEquals(secondCategory.getId(), updatedTask.getCategory().getId());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingTask_when_PutTask_then_Status404() throws Exception {
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", "doesn't matter");
+            inputOutput.put("description", "doesn't matter");
+            inputOutput.put("deadline", "1970-01-01T00:00");
+            inputOutput.put("categoryId", genericCategory.getId());
+
+            mockMvc
+                .perform(put("/tasks/999999999")
+                    .content(objectMapper.writeValueAsString(inputOutput))
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingDescription_when_PutTask_then_TaskIsUpdated() throws Exception {
+            String name = "new name";
+            String deadline = "2000-01-01T00:00";
+            Category secondCategory = categoryRepository.save(new Category("other", "other"));
+
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", name);
+            inputOutput.put("deadline", deadline);
+            inputOutput.put("categoryId", secondCategory.getId());
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(put("/tasks/" + preExistingTask.getId())
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().json(inputOutputAsString));
+
+            assertEquals(1, taskRepository.count());
+            Task updatedTask = taskRepository.findById(preExistingTask.getId()).orElseThrow();
+            assertEquals(name, updatedTask.getName());
+            assertNull(updatedTask.getDescription());
+            assertEquals(deadline, updatedTask.getDeadline().toString());
+            assertEquals(genericUsername, updatedTask.getAuthor());
+            assertEquals(secondCategory.getId(), updatedTask.getCategory().getId());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingRequiredData_when_PutTask_then_Status400() throws Exception {
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("description", "missing name, deadline and category");
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(put("/tasks/" + preExistingTask.getId())
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void given_AnonymousClient_when_PutTask_then_Status401() throws Exception {
+            mockMvc
+                .perform(put("/tasks/" + preExistingTask.getId()))
+                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = "DifferentUser")
+        void given_ExistingTask1FromUser1_when_PutTask1FromUser2_then_Status403() throws Exception {
+            String name = "new name";
+            String description = "new description";
+            String deadline = "2000-01-01T00:00";
+            Category secondCategory = categoryRepository.save(new Category("other", "other"));
+
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", name);
+            inputOutput.put("description", description);
+            inputOutput.put("deadline", deadline);
+            inputOutput.put("categoryId", secondCategory.getId());
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(put("/tasks/" + preExistingTask.getId())
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN", username = "Administrator")
+        void given_ExistingTaskFromUser_when_PutTaskFromAdmin_then_TaskIsUpdated() throws Exception {
+            String name = "new name";
+            String description = "new description";
+            String deadline = "2000-01-01T00:00";
+            Category secondCategory = categoryRepository.save(new Category("other", "other"));
+
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", name);
+            inputOutput.put("description", description);
+            inputOutput.put("deadline", deadline);
+            inputOutput.put("categoryId", secondCategory.getId());
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(put("/tasks/" + preExistingTask.getId())
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().json(inputOutputAsString));
+
+            assertEquals(1, taskRepository.count());
+            Task updatedTask = taskRepository.findById(preExistingTask.getId()).orElseThrow();
+            assertEquals(name, updatedTask.getName());
+            assertEquals(description, updatedTask.getDescription());
+            assertEquals(deadline, updatedTask.getDeadline().toString());
+            assertEquals(genericUsername, updatedTask.getAuthor());
+            assertEquals(secondCategory.getId(), updatedTask.getCategory().getId());
         }
     }
 

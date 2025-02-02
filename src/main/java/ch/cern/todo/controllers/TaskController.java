@@ -33,19 +33,38 @@ public class TaskController {
         return new PersistedTaskDto(taskService.saveTask(newTaskDto, userDetails.getUsername()));
     }
 
+    private void checkTaskRights(Task task, UserDetails userDetails) {
+        if (userDetails
+            .getAuthorities()
+            .stream()
+            .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))
+            && !task.getAuthor().equals(userDetails.getUsername())
+        ) {
+            throw new ResponseStatusException(FORBIDDEN, "You are not authorized to view task " + task.getId());
+        }
+    }
+
     @GetMapping("{id}")
     public PersistedTaskDto getTask(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
         try {
             Task found = taskService.getTask(id);
-            if (userDetails
-                    .getAuthorities()
-                    .stream()
-                    .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))
-                && !found.getAuthor().equals(userDetails.getUsername())
-            ) {
-                throw new ResponseStatusException(FORBIDDEN, "You are not authorized to view task " + id);
-            }
+            checkTaskRights(found, userDetails);
             return new PersistedTaskDto(found);
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(NOT_FOUND, "No task with ID " + id, e);
+        }
+    }
+
+    @PutMapping("{id}")
+    public PersistedTaskDto updateTask(
+        @PathVariable Long id,
+        @Valid @RequestBody NewTaskDto newTaskDto,
+        @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        try {
+            Task found = taskService.getTask(id);
+            checkTaskRights(found, userDetails);
+            return taskService.updateTask(found, newTaskDto);
         } catch (NoSuchElementException e) {
             throw new ResponseStatusException(NOT_FOUND, "No task with ID " + id, e);
         }
