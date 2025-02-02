@@ -316,6 +316,7 @@ public class CategoryTests extends TodoApplicationTests {
             mockMvc
                 .perform(delete("/categories/" + newCategory.getId()))
                 .andExpect(status().isForbidden());
+            assertEquals(1, categoryRepository.count());
         }
 
         @Test
@@ -324,6 +325,7 @@ public class CategoryTests extends TodoApplicationTests {
             mockMvc
                 .perform(delete("/categories/" + newCategory.getId()))
                 .andExpect(status().isUnauthorized());
+            assertEquals(1, categoryRepository.count());
         }
 
         @Test
