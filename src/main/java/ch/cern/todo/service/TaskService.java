@@ -38,4 +38,8 @@ public class TaskService {
 
         return new PersistedTaskDto(taskRepository.save(taskToUpdate));
     }
+
+    public void deleteTask(Long id) {
+        taskRepository.deleteById(id);
+    }
 }

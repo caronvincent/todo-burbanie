@@ -67,12 +67,17 @@ Reads task `{id}`. Task must belong to client or client must be `ADMIN`.
 
 ### PUT /tasks/{id}
 
-Updates a task.
+Updates a task. Task must belong to client or client must be `ADMIN`.
 
 Expects JSON with the following structure: `{"name" : "New name of task", "description" : "New task description", "deadline" : "2000-01-01T00:00", "categoryId": 1337}`
 
 Description is optional. Deadline must be of format `YYYY-MM-DDTMM:SS`. Category must exist.
 
+### DELETE /tasks/{id}
+
+Deletes task `{id}`. Task must belong to client or client must be `ADMIN`.
+
+If category `{id}` does not exist, nothing happens and status 200 is returned.
 
 # Testing
 

@@ -399,9 +399,66 @@ public class TaskTests extends TodoApplicationTests {
 
     @Nested
     class DeleteTests {
+        private Task preExistingTask;
+
+        @BeforeEach
+        void setUp() {
+            preExistingTask = taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+        }
+
         @Test
-        void given_ExistingTask_when_DeleteTasksId_then_TaskIsDeleted() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTask_when_DeleteTask_then_TaskIsDeleted() throws Exception {
+            mockMvc
+                .perform(delete("/tasks/" + preExistingTask.getId()))
+                .andExpect(status().isOk());
+            assertEquals(0, taskRepository.count());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = "DifferentUser")
+        void given_ExistingTask1FromUser1_when_DeleteTask1FromUser2_then_Status403() throws Exception {
+            mockMvc
+                .perform(delete("/tasks/" + preExistingTask.getId()))
+                .andExpect(status().isForbidden());
+            assertEquals(1, taskRepository.count());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN", username = "Administrator")
+        void given_ExistingTaskFromUser_when_DeleteTaskFromAdmin_then_TaskIsDeleted() throws Exception {
+            mockMvc
+                .perform(delete("/tasks/" + preExistingTask.getId()))
+                .andExpect(status().isOk());
+            assertEquals(0, taskRepository.count());
+        }
+
+        @Test
+        void given_AnonymousClient_when_DeleteTask_then_Status401() throws Exception {
+            mockMvc
+                .perform(delete("/tasks/" + preExistingTask.getId()))
+                .andExpect(status().isUnauthorized());
+            assertEquals(1, taskRepository.count());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingTask_when_DeleteTask_then_NothingHappensStatus200() throws Exception {
+            mockMvc
+                .perform(delete("/tasks/999999999"))
+                .andExpect(status().isOk());
+            assertEquals(1, taskRepository.count());
         }
     }
 
