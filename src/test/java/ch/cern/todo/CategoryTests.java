@@ -17,7 +17,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,15 +41,15 @@ public class CategoryTests extends TodoApplicationTests {
             Map<String, Object> inputOutput = new HashMap<>();
             inputOutput.put("name", title);
             inputOutput.put("description", description);
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
 
             mockMvc
                 .perform(post("/categories")
-                    .content(objectMapper.writeValueAsString(inputOutput))
+                    .content(inputOutputAsString)
                     .contentType(MediaType.APPLICATION_JSON)
                 )
-                .andDo(print())
                 .andExpect(status().isCreated())
-                .andExpect(content().json(objectMapper.writeValueAsString(inputOutput)));
+                .andExpect(content().json(inputOutputAsString));
 
             assertEquals(1, categoryRepository.count());
             Iterable<Category> categories = categoryRepository.findAll();
@@ -134,7 +133,7 @@ public class CategoryTests extends TodoApplicationTests {
         @WithMockUser(roles = "ADMIN")
         void given_TitleTooLong_when_PostCategories_then_Status400() throws Exception {
             Map<String, Object> input = new HashMap<>();
-            input.put("name", "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
+            input.put("name", "over 100 chars long 012345678901234567890123456789012345678901234567890123456789012345678901234567890");
             input.put("description", "doesn't matter");
 
             mockMvc
@@ -162,7 +161,6 @@ public class CategoryTests extends TodoApplicationTests {
 
             mockMvc
                 .perform(get("/categories/" + newCategory.getId()))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectMapper.writeValueAsString(expected)));
         }
@@ -196,14 +194,14 @@ public class CategoryTests extends TodoApplicationTests {
             Map<String, Object> inputOutput = new HashMap<>();
             inputOutput.put("name", name);
             inputOutput.put("description", description);
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
 
             mockMvc
                 .perform(put("/categories/" + newCategory.getId())
-                    .content(objectMapper.writeValueAsString(inputOutput))
+                    .content(inputOutputAsString)
                     .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(inputOutput)));
+                .andExpect(content().json(inputOutputAsString));
 
             assertEquals(1, categoryRepository.count());
             Category updatedCategory = categoryRepository.findById(newCategory.getId()).orElseThrow();
