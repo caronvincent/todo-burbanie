@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +43,7 @@ public class TaskTests extends TodoApplicationTests {
     class CreationTests {
         @Test
         @WithMockUser(roles = "USER", username = genericUsername)
-        void given_TaskData_when_PostTasks_then_TaskIsCreated() throws Exception {
+        void given_TaskData_when_PostTask_then_TaskIsCreated() throws Exception {
             String name = "test name";
             String description = "test description";
             String deadline = "1970-01-01T00:00";
@@ -72,6 +73,75 @@ public class TaskTests extends TodoApplicationTests {
                 assertEquals(genericUsername, task.getAuthor());
                 assertEquals(genericCategory.getId(), task.getCategory().getId());
             }
+        }
+
+        @Test
+        void given_AnonymousClient_when_PostTask_then_Status401() throws Exception {
+            String name = "doesn't matter";
+            String description = "doesn't matter";
+            String deadline = "1970-01-01T00:00";
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("name", name);
+            body.put("description", description);
+            body.put("deadline", deadline);
+            body.put("categoryId", genericCategory.getId());
+
+            mockMvc
+                .perform(post("/tasks")
+                    .content(objectMapper.writeValueAsString(objectMapper.writeValueAsString(body)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingDescription_when_PostTask_then_Status201() throws Exception {
+            String name = "missing description";
+            String deadline = "1970-01-01T00:00";
+
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", name);
+            inputOutput.put("deadline", deadline);
+            inputOutput.put("categoryId", genericCategory.getId());
+            String jsonAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(post("/tasks")
+                    .content(jsonAsString)
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(content().json(jsonAsString));
+
+            assertEquals(1, taskRepository.count());
+            Iterable<Task> tasks = taskRepository.findAll();
+            // Shouldn't loop
+            for (Task task : tasks) {
+                assertEquals(name, task.getName());
+                assertNull(task.getDescription());
+                assertEquals(deadline, task.getDeadline().toString());
+                assertEquals(genericUsername, task.getAuthor());
+                assertEquals(genericCategory.getId(), task.getCategory().getId());
+            }
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingRequiredData_when_PostTask_then_Status400() throws Exception {
+            String description = "missing name deadline and category";
+
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", description);
+            String jsonAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(post("/tasks")
+                    .content(jsonAsString)
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isBadRequest());
         }
     }
 
