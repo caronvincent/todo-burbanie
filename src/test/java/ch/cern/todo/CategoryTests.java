@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -91,9 +92,9 @@ public class CategoryTests extends TodoApplicationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void given_MissingData_when_PostCategories_then_Status400() throws Exception {
+        void given_MissingName_when_PostCategories_then_Status400() throws Exception {
             Map<String, Object> input = new HashMap<>();
-            input.put("name", "missing description");
+            input.put("description", "missing name");
 
             mockMvc
                 .perform(post("/categories")
@@ -101,6 +102,32 @@ public class CategoryTests extends TodoApplicationTests {
                     .contentType(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void given_MissingDescription_when_PostCategories_then_Status201() throws Exception {
+            String title = "missing optional description";
+
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", title);
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(post("/categories")
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(content().json(inputOutputAsString));
+
+            assertEquals(1, categoryRepository.count());
+            Iterable<Category> categories = categoryRepository.findAll();
+            // Shouldn't loop
+            for (Category category : categories) {
+                assertEquals(title, category.getName());
+                assertNull(category.getDescription());
+            }
         }
 
         @Test
@@ -233,11 +260,11 @@ public class CategoryTests extends TodoApplicationTests {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void given_MissingData_when_PutCategory_then_Status400() throws Exception {
+        void given_MissingName_when_PutCategory_then_Status400() throws Exception {
             Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("doesn't matter", "doesn't matter")));
 
             Map<String, Object> input = new HashMap<>();
-            input.put("name", "missing description");
+            input.put("description", "missing name");
 
             mockMvc
                 .perform(put("/categories/" + newCategory.getId())
@@ -246,6 +273,30 @@ public class CategoryTests extends TodoApplicationTests {
                 )
                 .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void given_MissingDescription_when_PutCategory_then_CategoryIsUpdated() throws Exception {
+            Category newCategory = categoryRepository.save(new Category(new NewCategoryDto("first title", "first description")));
+
+            String name = "new title";
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", name);
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(put("/categories/" + newCategory.getId())
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().json(inputOutputAsString));
+
+            assertEquals(1, categoryRepository.count());
+            Category updatedCategory = categoryRepository.findById(newCategory.getId()).orElseThrow();
+            assertEquals(name, updatedCategory.getName());
+            assertNull(updatedCategory.getDescription());
+        }
+
     }
 
     @Nested

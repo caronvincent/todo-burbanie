@@ -18,8 +18,7 @@ public class Category {
 
     @Column(
         name = "category_description",
-        length = 500,
-        nullable = false // TODO should be nullable
+        length = 500
     )
     private String description;
 
