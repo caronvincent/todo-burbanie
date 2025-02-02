@@ -28,7 +28,7 @@ Creates a category. Needs `ADMIN` role.
 
 Expects JSON with the following structure: `{"name" : "Name of category", "description" : "Category description"}`
 
-All fields are required.
+Description is optional.
 
 ### GET /categories/{id}
 
@@ -40,7 +40,7 @@ Updates a category. Needs `ADMIN` role.
 
 Expects JSON with the following structure: `{"name" : "New name of category", "description" : "New category description"}`
 
-All fields are required.
+Description is optional.
 
 ### DELETE /categories/{id}
 
