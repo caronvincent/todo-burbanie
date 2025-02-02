@@ -2,6 +2,7 @@ package ch.cern.todo;
 
 import ch.cern.todo.model.Category;
 import ch.cern.todo.model.NewTaskDto;
+import ch.cern.todo.model.PersistedTaskDto;
 import ch.cern.todo.model.Task;
 import ch.cern.todo.repository.CategoryRepository;
 import ch.cern.todo.repository.TaskRepository;
@@ -11,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -465,43 +468,273 @@ public class TaskTests extends TodoApplicationTests {
     @Nested
     class SearchTests {
         @Test
-        void given_ExistingTasks_when_SearchTasksByAuthor_then_TasksAreReturned() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "ADMIN", username = "Administrator")
+        void given_ExistingTasks_when_SearchTasksByAuthorAsAdmin_then_TasksAreReturned() throws Exception {
+            List<PersistedTaskDto> taskList = new ArrayList<>();
+
+            taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    "OtherUserName"
+                )
+            );
+
+            taskList.add(new PersistedTaskDto(taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            )));
+
+            mockMvc
+                .perform(get("/tasks/search?author=" + genericUsername))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(taskList)));
         }
 
         @Test
-        void given_ExistingTasks_when_SearchTasksByName_then_TasksAreReturned() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTasks_when_SearchTasksByAuthorAsUser_then_Status403() throws Exception {
+            mockMvc
+                .perform(get("/tasks/search?author=" + genericUsername))
+                .andExpect(status().isForbidden());
         }
 
         @Test
-        void given_ExistingTasks_when_SearchTasksByDescription_then_TasksAreReturned() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTasks_when_SearchTasksByName_then_TasksAreReturned() throws Exception {
+            String nameToSearch = "name to search";
+
+            taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "name to ignore",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+            List<PersistedTaskDto> taskList = new ArrayList<>();
+            taskList.add(new PersistedTaskDto(taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        nameToSearch,
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            )));
+
+            mockMvc
+                .perform(get("/tasks/search?name=" + nameToSearch))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(taskList)));
         }
 
         @Test
-        void given_ExistingTasks_when_SearchTasksByDeadline_then_TasksAreReturned() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTasks_when_SearchTasksByDescription_then_TasksAreReturned() throws Exception {
+            String descriptionToSearch = "description to search";
+
+            taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "description to ignore",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+            List<PersistedTaskDto> taskList = new ArrayList<>();
+            taskList.add(new PersistedTaskDto(taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        descriptionToSearch,
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            )));
+
+            mockMvc
+                .perform(get("/tasks/search?description=" + descriptionToSearch))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(taskList)));
         }
 
         @Test
-        void given_ExistingTasks_when_SearchTasksByCategory_then_TasksAreReturned() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTasks_when_SearchTasksByDeadline_then_TasksAreReturned() throws Exception {
+            String deadlineToSearch = "1970-01-01T00:00";
+
+            taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "2000-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+
+            List<PersistedTaskDto> taskList = new ArrayList<>();
+            taskList.add(new PersistedTaskDto(taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        deadlineToSearch,
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            )));
+
+            String jsonAsString = objectMapper.writeValueAsString(taskList);
+
+            mockMvc
+                .perform(get("/tasks/search?deadline=" + deadlineToSearch))
+                .andExpect(status().isOk())
+                .andExpect(content().json(jsonAsString));
         }
 
         @Test
-        void given_ExistingTasks_when_SearchTasksByMultipleCriterion_then_TasksAreReturned() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTasks_when_SearchTasksByCategory_then_TasksAreReturned() throws Exception {
+            Category categoryToIgnore = categoryRepository.save(new Category("other name", "other description"));
+            taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
+                        categoryToIgnore.getId()
+                    ),
+                    categoryToIgnore,
+                    genericUsername
+                )
+            );
+
+            List<PersistedTaskDto> taskList = new ArrayList<>();
+            taskList.add(new PersistedTaskDto(taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            )));
+
+            mockMvc
+                .perform(get("/tasks/search?category=" + genericCategory.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(taskList)));
         }
 
         @Test
-        void given_ExistingTaskFromUser1_when_InteractionWithTaskFromUser2_then_Status403() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTasks_when_SearchTasksByMultipleCriterion_then_TasksAreReturned() throws Exception {
+            String targetTitle = "target title";
+            String targetDescription = "target description";
+
+            taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "not matching title",
+                        targetDescription,
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+            taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        targetTitle,
+                        "not matching description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+
+            List<PersistedTaskDto> taskList = new ArrayList<>();
+            taskList.add(new PersistedTaskDto(taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        targetTitle,
+                        targetDescription,
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            )));
+
+            mockMvc
+                .perform(get("/tasks/search?name=" + targetTitle + "&description=" + targetDescription))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(taskList)));
         }
 
         @Test
-        void given_ExistingTaskFromUser1_when_InteractionWithTaskFromAdmin_then_Success() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTasks_when_SearchTasksByNoCriteria_then_AllTasksAreReturned() throws Exception {
+            List<PersistedTaskDto> taskList = new ArrayList<>();
+            taskList.add(new PersistedTaskDto(taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test name",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            )));
+
+            mockMvc
+                .perform(get("/tasks/search"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(taskList)));
         }
     }
 }

@@ -7,9 +7,15 @@ import ch.cern.todo.model.Task;
 import ch.cern.todo.repository.CategoryRepository;
 import ch.cern.todo.repository.TaskRepository;
 import jakarta.validation.Valid;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import static ch.cern.todo.repository.TaskSpecification.*;
+import static org.springframework.data.jpa.domain.Specification.where;
 
 @Service
 public class TaskService {
@@ -41,5 +47,28 @@ public class TaskService {
 
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
+    }
+
+    public List<PersistedTaskDto> search(String author, String name, String description, LocalDateTime deadline, Category category) {
+        Specification<Task> spec = where(null);
+        if (author != null) {
+            spec = spec.and(authorEqual(author));
+        }
+        if (name != null) {
+            spec = spec.and(nameLike(name));
+        }
+        if (description != null) {
+            spec = spec.and(descriptionLike(description));
+        }
+        if (deadline != null) {
+            spec = spec.and(deadlineEqual(deadline));
+        }
+        if (category != null) {
+            spec = spec.and(categoryEqual(category));
+        }
+
+        List<PersistedTaskDto> output = new ArrayList<>();
+        taskRepository.findAll(spec).forEach(task -> output.add(new PersistedTaskDto(task)));
+        return output;
     }
 }

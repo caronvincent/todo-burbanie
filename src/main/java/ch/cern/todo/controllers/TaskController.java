@@ -1,5 +1,6 @@
 package ch.cern.todo.controllers;
 
+import ch.cern.todo.model.Category;
 import ch.cern.todo.model.NewTaskDto;
 import ch.cern.todo.model.PersistedTaskDto;
 import ch.cern.todo.model.Task;
@@ -7,13 +8,14 @@ import ch.cern.todo.repository.TaskRepository;
 import ch.cern.todo.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -82,5 +84,29 @@ public class TaskController {
 
         checkTaskRights(optionalTask.orElseThrow(), userDetails);
         taskService.deleteTask(id);
+    }
+
+    @GetMapping("search")
+    public List<PersistedTaskDto> search(
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) LocalDateTime deadline,
+            @RequestParam(required = false) Category category,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        boolean userIsAdmin = userDetails
+            .getAuthorities()
+            .stream()
+            .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+
+        if (userIsAdmin) {
+            return taskService.search(author, name, description, deadline, category);
+        } else {
+            if (author != null) {
+                throw new ResponseStatusException(FORBIDDEN, "Only administrators may search by author");
+            }
+            return taskService.search(userDetails.getUsername(), name, description, deadline, category);
+        }
     }
 }

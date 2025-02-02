@@ -79,6 +79,17 @@ Deletes task `{id}`. Task must belong to client or client must be `ADMIN`.
 
 If category `{id}` does not exist, nothing happens and status 200 is returned.
 
+### GET /tasks/search
+
+Searches tasks. Query string search parameters are available:
+- `name`: tasks with name containing parameter
+- `description`: tasks with description containing parameter
+- `deadline`: tasks where deadline is parameter. Must be of format `YYYY-MM-DDTMM:SS`.
+- `category`: tasks where category is parameter.
+- `author`: tasks where author is parameter. Requires `ADMIN` role, returns status 403 otherwise.
+
+If client is not `ADMIN`, search will only find tasks belonging to client.
+
 # Testing
 
 All routes have accompanying tests.
