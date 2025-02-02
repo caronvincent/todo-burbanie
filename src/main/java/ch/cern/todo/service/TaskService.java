@@ -22,4 +22,8 @@ public class TaskService {
         Category category = categoryRepository.findById(newTaskDto.categoryId()).orElseThrow();
         return taskRepository.save(new Task(newTaskDto, category, username));
     }
+
+    public Task getTask(Long id) {
+        return taskRepository.findById(id).orElseThrow();
+    }
 }

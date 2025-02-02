@@ -50,7 +50,8 @@ If category `{id}` does not exist, nothing happens and status 200 is returned.
 
 ## Tasks
 
-This section describes endpoints related to tasks. Tasks are user-private: users can CRUD their own tasks but not those of other users. Administrators can CRUD any task.
+This section describes endpoints related to tasks. Tasks are user-private: users can CRUD their own tasks but not those of other users.
+Administrators can CRUD any task.
 
 ### POST /tasks
 
@@ -59,6 +60,10 @@ Creates a task.
 Expects JSON with the following structure: `{"name" : "Name of task", "description" : "Task description", "deadline" : "1970-01-01T00:00", "categoryId": 42}`
 
 Description is optional. Deadline must be of format `YYYY-MM-DDTMM:SS`. Category must exist.
+
+### GET /tasks/{id}
+
+Reads task `{id}`. Task must belong to client or client must be `ADMIN`.
 
 # Testing
 

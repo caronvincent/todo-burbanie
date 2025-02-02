@@ -1,6 +1,7 @@
 package ch.cern.todo;
 
 import ch.cern.todo.model.Category;
+import ch.cern.todo.model.NewTaskDto;
 import ch.cern.todo.model.Task;
 import ch.cern.todo.repository.CategoryRepository;
 import ch.cern.todo.repository.TaskRepository;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -148,8 +150,92 @@ public class TaskTests extends TodoApplicationTests {
     @Nested
     class ReadTests {
         @Test
-        void given_ExistingTask_when_GetTasksId_then_TaskIsReturned() {
-            throw new UnsupportedOperationException();
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_ExistingTask_when_GetTask_then_TaskIsReturned() throws Exception {
+            String name = "test title";
+            String description = "test description";
+            String deadline = "1970-01-01T00:00";
+
+            Task newTask = taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        name,
+                        description,
+                        deadline,
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+
+            Map<String, Object> expected = new HashMap<>();
+            expected.put("name", name);
+            expected.put("description", description);
+            expected.put("deadline", deadline);
+            expected.put("categoryId", genericCategory.getId());
+
+            mockMvc
+                .perform(get("/tasks/" + newTask.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(expected)));
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingTask_when_GetTask_then_Status404() throws Exception {
+            mockMvc
+                .perform(get("/tasks/999999999"))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void given_AnonymousClient_when_GetTask_then_Status401() throws Exception {
+            mockMvc
+                .perform(get("/tasks/1"))
+                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = "DifferentUser")
+        void given_ExistingTask1FromUser1_when_GetTask1FromUser2_then_Status403() throws Exception {
+            Task newTask = taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+
+            mockMvc
+                .perform(get("/tasks/" + newTask.getId()))
+                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN", username = "Administrator")
+        void given_ExistingTaskFromUser_when_GetTaskFromAdmin_then_TaskIsReturned() throws Exception {
+            Task newTask = taskRepository.save(
+                new Task(
+                    new NewTaskDto(
+                        "test title",
+                        "test description",
+                        "1970-01-01T00:00",
+                        genericCategory.getId()
+                    ),
+                    genericCategory,
+                    genericUsername
+                )
+            );
+
+            mockMvc
+                .perform(get("/tasks/" + newTask.getId()))
+                .andExpect(status().isOk());
         }
     }
 

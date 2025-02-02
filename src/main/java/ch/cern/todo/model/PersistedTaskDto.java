@@ -7,4 +7,15 @@ public record PersistedTaskDto(
     String deadline,
     Long categoryId,
     String author
-) {}
+) {
+    public PersistedTaskDto (Task task) {
+        this(
+            task.getId(),
+            task.getName(),
+            task.getDescription(),
+            task.getDeadline().toString(),
+            task.getCategory().getId(),
+            task.getAuthor()
+        );
+    }
+}

@@ -10,6 +10,12 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.NoSuchElementException;
+
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
 @EnableMethodSecurity
@@ -24,14 +30,24 @@ public class TaskController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PersistedTaskDto createTask(@Valid @RequestBody NewTaskDto newTaskDto, @AuthenticationPrincipal UserDetails userDetails) {
-        Task newTask = taskService.saveTask(newTaskDto, userDetails.getUsername());
-        return new PersistedTaskDto(
-            newTask.getId(),
-            newTask.getName(),
-            newTask.getDescription(),
-            newTask.getDeadline().toString(),
-            newTask.getCategory().getId(),
-            newTask.getAuthor()
-        );
+        return new PersistedTaskDto(taskService.saveTask(newTaskDto, userDetails.getUsername()));
+    }
+
+    @GetMapping("{id}")
+    public PersistedTaskDto getTask(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            Task found = taskService.getTask(id);
+            if (userDetails
+                    .getAuthorities()
+                    .stream()
+                    .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))
+                && !found.getAuthor().equals(userDetails.getUsername())
+            ) {
+                throw new ResponseStatusException(FORBIDDEN, "You are not authorized to view task " + id);
+            }
+            return new PersistedTaskDto(found);
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(NOT_FOUND, "No task with ID " + id, e);
+        }
     }
 }
