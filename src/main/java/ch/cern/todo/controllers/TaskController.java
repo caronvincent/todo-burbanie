@@ -3,7 +3,6 @@ package ch.cern.todo.controllers;
 import ch.cern.todo.model.Category;
 import ch.cern.todo.model.NewTaskDto;
 import ch.cern.todo.model.PersistedTaskDto;
-import ch.cern.todo.model.Task;
 import ch.cern.todo.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -15,7 +14,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
