@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
@@ -69,18 +68,6 @@ public class TaskController {
             @RequestParam(required = false) Category category,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        boolean userIsAdmin = userDetails
-            .getAuthorities()
-            .stream()
-            .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
-
-        if (userIsAdmin) {
-            return taskService.search(author, name, description, deadline, category);
-        } else {
-            if (author != null) {
-                throw new ResponseStatusException(FORBIDDEN, "Only administrators may search by author");
-            }
-            return taskService.search(userDetails.getUsername(), name, description, deadline, category);
-        }
+        return taskService.search(author, name, description, deadline, category, userDetails);
     }
 }

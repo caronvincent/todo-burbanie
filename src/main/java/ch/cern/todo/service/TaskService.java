@@ -74,7 +74,13 @@ public class TaskService {
         deleteTask(id);
     }
 
-    public List<PersistedTaskDto> search(String author, String name, String description, LocalDateTime deadline, Category category) {
+    public List<PersistedTaskDto> search(
+        String author,
+        String name,
+        String description,
+        LocalDateTime deadline,
+        Category category
+    ) {
         Specification<Task> spec = where(null);
         if (author != null) {
             spec = spec.and(authorEqual(author));
@@ -97,14 +103,35 @@ public class TaskService {
         return output;
     }
 
+    public List<PersistedTaskDto> search(
+        String author,
+        String name,
+        String description,
+        LocalDateTime deadline,
+        Category category,
+        UserDetails userDetails
+    ) {
+        if (userIsAdmin(userDetails)) {
+            return search(author, name, description, deadline, category);
+        }
+
+        if (author != null) {
+            throw new ResponseStatusException(FORBIDDEN, "Only administrators may search by author");
+        }
+
+        return search(userDetails.getUsername(), name, description, deadline, category);
+    }
+
     private void checkTaskRights(Task task, UserDetails userDetails) {
-        if (userDetails
+        if (!userIsAdmin(userDetails) && !task.getAuthor().equals(userDetails.getUsername())) {
+            throw new ResponseStatusException(FORBIDDEN, "You are not authorized to interact with task " + task.getId());
+        }
+    }
+
+    private boolean userIsAdmin(UserDetails userDetails) {
+        return userDetails
             .getAuthorities()
             .stream()
-            .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))
-            && !task.getAuthor().equals(userDetails.getUsername())
-        ) {
-            throw new ResponseStatusException(FORBIDDEN, "You are not interact with task " + task.getId());
-        }
+            .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
     }
 }
