@@ -8,14 +8,18 @@ import ch.cern.todo.repository.CategoryRepository;
 import ch.cern.todo.repository.TaskRepository;
 import jakarta.validation.Valid;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static ch.cern.todo.repository.TaskSpecification.*;
 import static org.springframework.data.jpa.domain.Specification.where;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 @Service
 public class TaskService {
@@ -36,6 +40,12 @@ public class TaskService {
         return taskRepository.findById(id).orElseThrow();
     }
 
+    public Task getTask(Long id,  UserDetails userDetails) {
+        Task found = getTask(id);
+        checkTaskRights(found, userDetails);
+        return found;
+    }
+
     public PersistedTaskDto updateTask(Task taskToUpdate, @Valid NewTaskDto newTaskDto) {
         taskToUpdate.setName(newTaskDto.name());
         taskToUpdate.setDescription(newTaskDto.description());
@@ -45,8 +55,23 @@ public class TaskService {
         return new PersistedTaskDto(taskRepository.save(taskToUpdate));
     }
 
+    public PersistedTaskDto updateTask(Long id, @Valid NewTaskDto newTaskDto, UserDetails userDetails) {
+        Task found = getTask(id);
+        checkTaskRights(found, userDetails);
+
+        return updateTask(found, newTaskDto);
+    }
+
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
+    }
+
+    public void deleteTask(Long id, UserDetails userDetails) {
+        Optional<Task> optionalTask = taskRepository.findById(id);
+        if (optionalTask.isEmpty()) return;
+        checkTaskRights(optionalTask.orElseThrow(), userDetails);
+
+        deleteTask(id);
     }
 
     public List<PersistedTaskDto> search(String author, String name, String description, LocalDateTime deadline, Category category) {
@@ -70,5 +95,16 @@ public class TaskService {
         List<PersistedTaskDto> output = new ArrayList<>();
         taskRepository.findAll(spec).forEach(task -> output.add(new PersistedTaskDto(task)));
         return output;
+    }
+
+    private void checkTaskRights(Task task, UserDetails userDetails) {
+        if (userDetails
+            .getAuthorities()
+            .stream()
+            .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))
+            && !task.getAuthor().equals(userDetails.getUsername())
+        ) {
+            throw new ResponseStatusException(FORBIDDEN, "You are not interact with task " + task.getId());
+        }
     }
 }
