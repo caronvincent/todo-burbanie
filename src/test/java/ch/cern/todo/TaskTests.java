@@ -147,6 +147,42 @@ public class TaskTests extends TodoApplicationTests {
                 )
                 .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MalformedDeadline_when_PostTask_then_Status400() throws Exception {
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", "test name");
+            inputOutput.put("description", "test description");
+            inputOutput.put("deadline", "not a datetime");
+            inputOutput.put("categoryId", genericCategory.getId());
+            String jsonAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(post("/tasks")
+                    .content(jsonAsString)
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingCategory_when_PostTask_then_Status404() throws Exception {
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", "test name");
+            inputOutput.put("description", "test description");
+            inputOutput.put("deadline", "1970-01-01T00:00");
+            inputOutput.put("categoryId", 9999999);
+            String jsonAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(post("/tasks")
+                    .content(jsonAsString)
+                    .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound());
+        }
     }
 
     @Nested
@@ -337,6 +373,40 @@ public class TaskTests extends TodoApplicationTests {
                     .content(inputOutputAsString)
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MalformedDeadline_when_PutTask_then_TaskIsUpdated() throws Exception {
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", "new name");
+            inputOutput.put("description", "new description");
+            inputOutput.put("deadline", "not a datetime");
+            inputOutput.put("categoryId", categoryRepository.save(new Category("other", "other")).getId());
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(put("/tasks/" + preExistingTask.getId())
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(roles = "USER", username = genericUsername)
+        void given_MissingCategory_when_PutTask_then_Status404() throws Exception {
+            Map<String, Object> inputOutput = new HashMap<>();
+            inputOutput.put("name", "new name");
+            inputOutput.put("description", "new description");
+            inputOutput.put("deadline", "1970-01-01T00:00");
+            inputOutput.put("categoryId", 999999);
+            String inputOutputAsString = objectMapper.writeValueAsString(inputOutput);
+
+            mockMvc
+                .perform(put("/tasks/" + preExistingTask.getId())
+                    .content(inputOutputAsString)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
         }
 
         @Test

@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static ch.cern.todo.repository.TaskSpecification.*;
@@ -32,12 +33,20 @@ public class TaskService {
     }
 
     public Task saveTask(@Valid NewTaskDto newTaskDto, String username) {
-        Category category = categoryRepository.findById(newTaskDto.categoryId()).orElseThrow();
-        return taskRepository.save(new Task(newTaskDto, category, username));
+        try {
+            Category category = categoryRepository.findById(newTaskDto.categoryId()).orElseThrow();
+            return taskRepository.save(new Task(newTaskDto, category, username));
+        } catch (NoSuchElementException e) {
+            throw new NoSuchElementException("Category " + newTaskDto.categoryId() + " not found");
+        }
     }
 
     public Task getTask(Long id) {
-        return taskRepository.findById(id).orElseThrow();
+        try {
+            return taskRepository.findById(id).orElseThrow();
+        } catch (NoSuchElementException e) {
+            throw new NoSuchElementException("Task " + id + " not found");
+        }
     }
 
     public Task getTask(Long id,  UserDetails userDetails) {
@@ -47,10 +56,15 @@ public class TaskService {
     }
 
     public PersistedTaskDto updateTask(Task taskToUpdate, @Valid NewTaskDto newTaskDto) {
+        try {
+            taskToUpdate.setCategory(categoryRepository.findById(newTaskDto.categoryId()).orElseThrow());
+        } catch (NoSuchElementException e) {
+            throw new NoSuchElementException("Category " + newTaskDto.categoryId() + " not found");
+        }
+
         taskToUpdate.setName(newTaskDto.name());
         taskToUpdate.setDescription(newTaskDto.description());
-        taskToUpdate.setCategory(categoryRepository.findById(newTaskDto.categoryId()).orElseThrow());
-        taskToUpdate.setDeadline(LocalDateTime.parse(newTaskDto.deadline()));
+        taskToUpdate.setDeadline(newTaskDto.deadline());
 
         return new PersistedTaskDto(taskRepository.save(taskToUpdate));
     }

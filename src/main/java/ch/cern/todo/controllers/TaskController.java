@@ -29,7 +29,11 @@ public class TaskController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PersistedTaskDto createTask(@Valid @RequestBody NewTaskDto newTaskDto, @AuthenticationPrincipal UserDetails userDetails) {
-        return new PersistedTaskDto(taskService.saveTask(newTaskDto, userDetails.getUsername()));
+        try {
+            return new PersistedTaskDto(taskService.saveTask(newTaskDto, userDetails.getUsername()));
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(NOT_FOUND, e.getMessage());
+        }
     }
 
     @GetMapping("{id}")
@@ -37,7 +41,7 @@ public class TaskController {
         try {
             return new PersistedTaskDto(taskService.getTask(id, userDetails));
         } catch (NoSuchElementException e) {
-            throw new ResponseStatusException(NOT_FOUND, "No task with ID " + id, e);
+            throw new ResponseStatusException(NOT_FOUND, e.getMessage());
         }
     }
 
@@ -50,7 +54,7 @@ public class TaskController {
         try {
             return taskService.updateTask(id, newTaskDto, userDetails);
         } catch (NoSuchElementException e) {
-            throw new ResponseStatusException(NOT_FOUND, "No task with ID " + id, e);
+            throw new ResponseStatusException(NOT_FOUND, e.getMessage());
         }
     }
 
@@ -61,12 +65,12 @@ public class TaskController {
 
     @GetMapping("search")
     public List<PersistedTaskDto> search(
-            @RequestParam(required = false) String author,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) LocalDateTime deadline,
-            @RequestParam(required = false) Category category,
-            @AuthenticationPrincipal UserDetails userDetails
+        @RequestParam(required = false) String author,
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String description,
+        @RequestParam(required = false) LocalDateTime deadline,
+        @RequestParam(required = false) Category category,
+        @AuthenticationPrincipal UserDetails userDetails
     ) {
         return taskService.search(author, name, description, deadline, category, userDetails);
     }

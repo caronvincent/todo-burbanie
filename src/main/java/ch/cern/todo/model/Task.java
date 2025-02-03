@@ -44,7 +44,7 @@ public class Task {
     public Task(NewTaskDto newTaskDto, Category category, String username) {
         this.name = newTaskDto.name();
         this.description = newTaskDto.description();
-        this.deadline = LocalDateTime.parse(newTaskDto.deadline());
+        this.deadline = newTaskDto.deadline();
         this.category = category;
         this.author = username;
     }
