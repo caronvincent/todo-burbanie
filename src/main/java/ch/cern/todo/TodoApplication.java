@@ -29,39 +29,40 @@ public class TodoApplication {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
-				.csrf(AbstractHttpConfigurer::disable)
-				.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated())
-				.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-				.httpBasic(withDefaults())
-				.build();
+			.csrf(AbstractHttpConfigurer::disable)
+			.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated())
+			.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+			.httpBasic(withDefaults())
+			.build();
 	}
 
 	@Bean
 	DataSource dataSource() {
 		return new EmbeddedDatabaseBuilder()
-				.setType(H2)
-				.addScripts(JdbcDaoImpl.DEFAULT_USER_SCHEMA_DDL_LOCATION)
-				.build();
+			.setType(H2)
+			.setName("todo-db")
+			.addScripts(JdbcDaoImpl.DEFAULT_USER_SCHEMA_DDL_LOCATION)
+			.build();
 	}
 
 	@Bean
 	UserDetailsManager users(DataSource dataSource) {
 		// Challenge requirements do not include user management so we hardcode a few users
 		UserDetails user = User.builder()
-				.username("user")
-				.password("{noop}u1pass")
-				.roles("USER")
-				.build();
+			.username("user")
+			.password("{noop}u1pass")
+			.roles("USER")
+			.build();
 		UserDetails userTwo = User.builder()
-				.username("userTwo")
-				.password("{noop}u2pass")
-				.roles("USER")
-				.build();
+			.username("userTwo")
+			.password("{noop}u2pass")
+			.roles("USER")
+			.build();
 		UserDetails admin = User.builder()
-				.username("admin")
-				.password("{noop}admin")
-				.roles("USER", "ADMIN")
-				.build();
+			.username("admin")
+			.password("{noop}admin")
+			.roles("USER", "ADMIN")
+			.build();
 		JdbcUserDetailsManager users = new JdbcUserDetailsManager(dataSource);
 		users.createUser(user);
 		users.createUser(userTwo);
